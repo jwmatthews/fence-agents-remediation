@@ -302,14 +302,21 @@ undeploy: ## Undeploy controller from the K8s cluster specified in ~/.kube/confi
 ##@ Bundle Creation Addition
 ## Some addition to bundle creation in the bundle
 
-# Cross-platform base64 and in-place sed (GNU/Linux vs BSD/macOS).
-UNAME_S := $(shell uname -s)
-ifeq ($(UNAME_S),Darwin)
-BASE64 = base64 -b 0 -i
-SED_I  = sed -E -i ''
-else
+# Detect GNU vs BSD tools by capability, not OS.
+# GNU base64/sed accept --version; the BSD versions shipped with macOS do not.
+BASE64_IS_GNU := $(shell base64 --version >/dev/null 2>&1 && echo yes)
+SED_IS_GNU    := $(shell sed --version >/dev/null 2>&1 && echo yes)
+
+ifeq ($(BASE64_IS_GNU),yes)
 BASE64 = base64 --wrap=0
-SED_I  = sed -r -i
+else
+BASE64 = base64 -b 0 -i
+endif
+
+ifeq ($(SED_IS_GNU),yes)
+SED_I = sed -r -i
+else
+SED_I = sed -E -i ''
 endif
 
 DEFAULT_ICON_BASE64 := $(shell $(BASE64) ${BLUE_ICON_PATH})
